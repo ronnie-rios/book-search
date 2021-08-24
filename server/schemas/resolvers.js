@@ -1,8 +1,16 @@
-const { User } = require('../models');
-const { AutenticationError, AuthenticationError } = require('apollo-server-express');
+const { User, Book } = require('../models');
+const {  AuthenticationError } = require('apollo-server-express');
 const { signToken } = require('../utils/auth');
 const resolvers = {
     Query: {
+        user: async (parent, { username }) => {
+            return User.findOne({ username })
+              .select("-__v -password")
+              .populate("savedBooks");
+          },
+          users: async () => {
+            return User.find().select("-__v").populate("savedBooks");
+          },
         me: async(parent, args, context) => {
             if(context.user) {
                 const userData = await User.findOne({ _id: context.user._id }).select(
@@ -10,7 +18,6 @@ const resolvers = {
                 )
                return userData; 
             };
-            
         
         throw new AuthenticationError('must be logged in')
         },
@@ -35,12 +42,12 @@ const resolvers = {
                 return {token, user };
             },
 
-            saveBook: async(parent, args, context) => {
+            saveBook: async(parent, { input }, context) => {
                 console.log(args);
                 if (context.user) {
                     const updatedUser = await User.findByIdAndUpdate(
-                        { _id: context.user_id },
-                        { $pull: { savedBooks: { bookId: args.bookId } } },
+                        { _id: context.user._id },
+                        { $addToSet: { savedBooks: input } },
                         { new: True }
                     );
 
@@ -48,16 +55,16 @@ const resolvers = {
                 }
                 throw new AuthenticationError('must be logged in');
             },
-            removeBook: async (parent, args, context) => {
+            removeBook: async (parent, {bookId}, context) => {
                 if (context.user) {
                     const updatedUser = await User.findOneAndUpdate(
                         { _id: context.user._id },
-                        { $pull: { savedBooks: { bookId: args.bookId } } },
+                        { $pull: { savedBooks: { bookId: bookId } } },
                         { new: true }
                     );
                     return updatedUser;
                 }
-                throw new AutenticationError('must be logged in');
+                throw new AuthenticationError('must be logged in');
             },
         }
     }
