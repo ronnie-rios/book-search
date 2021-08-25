@@ -8,7 +8,7 @@ const resolvers = {
               .select("-__v -password")
               .populate("savedBooks");
           },
-          users: async () => {
+        users: async () => {
             return User.find().select("-__v").populate("savedBooks");
           },
         me: async(parent, args, context) => {
@@ -20,6 +20,7 @@ const resolvers = {
             };
         
         throw new AuthenticationError('must be logged in')
+        },
         },
         Mutation: {
             addUser: async(parent, args) => {
@@ -68,6 +69,6 @@ const resolvers = {
             },
         }
     }
-}
+
 
 module.exports = resolvers;
